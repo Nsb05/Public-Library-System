@@ -307,7 +307,7 @@ st.markdown("---")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# PANEL 4: Fine Collection by Year
+# PANEL 3: Fine Collection by Year
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown('<p class="section-header">💰 Fine Collection — Issued vs. Collected by Year</p>', unsafe_allow_html=True)
 st.markdown('<p class="section-subtext">Stacked bars show what was issued; green portion = collected. Line = cumulative outstanding balance.</p>', unsafe_allow_html=True)
