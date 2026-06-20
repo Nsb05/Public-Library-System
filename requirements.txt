@@ -1,0 +1,14 @@
+# Public Library Management System — Python Dependencies
+# Python 3.13 compatible (uses pre-built wheels, no compiler needed)
+# Install with: pip install -r requirements.txt
+
+# Data generation
+Faker>=24.0.0
+mysql-connector-python>=8.4.0
+tqdm>=4.66.0
+
+# Dashboard
+streamlit>=1.35.0
+plotly>=5.22.0
+pandas>=2.0.0
+sqlalchemy>=2.0.0

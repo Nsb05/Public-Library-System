@@ -1,0 +1,23 @@
+# Python & Streamlit
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+env/
+
+# Streamlit secrets (contains real credentials — never commit)
+dashboard/.streamlit/secrets.toml
+.streamlit/secrets.toml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
