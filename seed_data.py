@@ -118,13 +118,13 @@ def rand_date(start: date, end: date) -> date:
     return start + timedelta(days=random.randint(0, (end - start).days))
 
 
+import psycopg2.extras
+
 def batch_insert(cursor, table: str, columns: list[str], rows: list[tuple], batch_size: int = 1000):
-    """Insert rows in batches to avoid memory issues."""
-    placeholders = ", ".join(["%s"] * len(columns))
+    """Insert rows in batches using psycopg2.extras.execute_values for performance."""
     col_str = ", ".join(columns)
-    sql = f"INSERT INTO {table} ({col_str}) VALUES ({placeholders})"
-    for i in range(0, len(rows), batch_size):
-        cursor.executemany(sql, rows[i : i + batch_size])
+    sql = f"INSERT INTO {table} ({col_str}) VALUES %s"
+    psycopg2.extras.execute_values(cursor, sql, rows, page_size=batch_size)
 
 
 # ── data generation functions ────────────────────────────────────────────────
