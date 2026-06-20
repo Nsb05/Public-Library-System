@@ -1,27 +1,17 @@
 -- =============================================================================
 -- PUBLIC LIBRARY MANAGEMENT SYSTEM — schema.sql
--- Database: MySQL 8.0+
--- Encoding: UTF8MB4
+-- Database: PostgreSQL
+-- Encoding: UTF8
 -- Description: Full DDL for a multi-branch public library system.
 --              Normalized to 3NF with proper FK constraints and CHECK constraints.
 -- =============================================================================
-
--- WARNING: Drops and recreates the database for a clean install.
---          Comment out the next line if you want to preserve existing data.
-DROP DATABASE IF EXISTS public_library;
-
-CREATE DATABASE IF NOT EXISTS public_library
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE public_library;
 
 -- =============================================================================
 -- TABLE: branches
 -- Represents physical library branches in the system.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS branches (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
+    id           SERIAL PRIMARY KEY,
     name         VARCHAR(100)  NOT NULL,
     address      VARCHAR(200)  NOT NULL,
     city         VARCHAR(100)  NOT NULL,
@@ -31,7 +21,7 @@ CREATE TABLE IF NOT EXISTS branches (
 
     CONSTRAINT chk_branches_opening_year
         CHECK (opening_year BETWEEN 1800 AND 2100)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -39,7 +29,7 @@ CREATE TABLE IF NOT EXISTS branches (
 -- Represents unique bibliographic titles. One title can have many physical copies.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS books (
-    id               INT AUTO_INCREMENT PRIMARY KEY,
+    id               SERIAL PRIMARY KEY,
     title            VARCHAR(300)  NOT NULL,
     author           VARCHAR(200)  NOT NULL,
     genre            VARCHAR(50)   NOT NULL,
@@ -52,7 +42,7 @@ CREATE TABLE IF NOT EXISTS books (
         UNIQUE (isbn),
     CONSTRAINT chk_books_publication_year
         CHECK (publication_year BETWEEN 1000 AND 2100)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -60,11 +50,11 @@ CREATE TABLE IF NOT EXISTS books (
 -- Library employees, each assigned to a branch.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS staff (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         SERIAL PRIMARY KEY,
     name       VARCHAR(200)  NOT NULL,
     email      VARCHAR(200)  NOT NULL,
     branch_id  INT           NOT NULL,
-    role       ENUM('librarian', 'assistant', 'manager', 'technician') NOT NULL,
+    role       VARCHAR(20) CHECK (role IN ('librarian', 'assistant', 'manager', 'technician')) NOT NULL,
     hire_date  DATE          NOT NULL,
     created_at TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
 
@@ -74,7 +64,7 @@ CREATE TABLE IF NOT EXISTS staff (
         FOREIGN KEY (branch_id) REFERENCES branches (id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -82,7 +72,7 @@ CREATE TABLE IF NOT EXISTS staff (
 -- Library card holders. Each has a home branch.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS patrons (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
+    id             SERIAL PRIMARY KEY,
     name           VARCHAR(200)  NOT NULL,
     email          VARCHAR(200)  NOT NULL,
     phone          VARCHAR(20),
@@ -97,7 +87,7 @@ CREATE TABLE IF NOT EXISTS patrons (
         FOREIGN KEY (home_branch_id) REFERENCES branches (id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -106,10 +96,10 @@ CREATE TABLE IF NOT EXISTS patrons (
 -- One book can have many copies across many branches (one-to-many).
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS copies (
-    id               INT AUTO_INCREMENT PRIMARY KEY,
+    id               SERIAL PRIMARY KEY,
     book_id          INT           NOT NULL,
     branch_id        INT           NOT NULL,
-    copy_condition   ENUM('new', 'good', 'fair', 'poor', 'damaged') NOT NULL DEFAULT 'good',
+    copy_condition   VARCHAR(20) DEFAULT 'good' CHECK (copy_condition IN ('new', 'good', 'fair', 'poor', 'damaged')) NOT NULL,
     acquisition_date DATE          NOT NULL,
 
     CONSTRAINT fk_copies_book
@@ -120,7 +110,7 @@ CREATE TABLE IF NOT EXISTS copies (
         FOREIGN KEY (branch_id) REFERENCES branches (id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -128,7 +118,7 @@ CREATE TABLE IF NOT EXISTS copies (
 -- A patron checking out a physical copy. return_date is NULL if not returned.
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS loans (
-    id            INT AUTO_INCREMENT PRIMARY KEY,
+    id            SERIAL PRIMARY KEY,
     copy_id       INT  NOT NULL,
     patron_id     INT  NOT NULL,
     checkout_date DATE NOT NULL,
@@ -152,7 +142,7 @@ CREATE TABLE IF NOT EXISTS loans (
         CHECK (due_date > checkout_date),
     CONSTRAINT chk_loans_return_after_checkout
         CHECK (return_date IS NULL OR return_date >= checkout_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -162,11 +152,11 @@ CREATE TABLE IF NOT EXISTS loans (
 --                  or waiting → cancelled
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS holds (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
+    id             SERIAL PRIMARY KEY,
     book_id        INT  NOT NULL,
     patron_id      INT  NOT NULL,
     request_date   DATE NOT NULL,
-    status         ENUM('waiting', 'ready', 'fulfilled', 'cancelled') NOT NULL DEFAULT 'waiting',
+    status         VARCHAR(20) DEFAULT 'waiting' CHECK (status IN ('waiting', 'ready', 'fulfilled', 'cancelled')) NOT NULL,
     fulfilled_date DATE,          -- NULL until status = 'fulfilled' or 'ready'
 
     CONSTRAINT fk_holds_book
@@ -177,7 +167,7 @@ CREATE TABLE IF NOT EXISTS holds (
         FOREIGN KEY (patron_id) REFERENCES patrons (id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -185,7 +175,7 @@ CREATE TABLE IF NOT EXISTS holds (
 -- A fine issued for an overdue loan. One fine per loan (UNIQUE on loan_id).
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS fines (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         SERIAL PRIMARY KEY,
     loan_id    INT            NOT NULL,
     amount     DECIMAL(8, 2)  NOT NULL,
     paid       BOOL           NOT NULL DEFAULT FALSE,
@@ -200,7 +190,7 @@ CREATE TABLE IF NOT EXISTS fines (
         ON UPDATE CASCADE,
     CONSTRAINT chk_fines_amount_positive
         CHECK (amount > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 
 -- =============================================================================
@@ -254,7 +244,7 @@ SELECT
     l.id                                      AS loan_id,
     l.checkout_date,
     l.due_date,
-    DATEDIFF(CURDATE(), l.due_date)           AS days_overdue,    -- negative = not yet due
+    (CURRENT_DATE - l.due_date)               AS days_overdue,    -- negative = not yet due
     p.id                                      AS patron_id,
     p.name                                    AS patron_name,
     p.email                                   AS patron_email,

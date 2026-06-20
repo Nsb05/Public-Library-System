@@ -19,7 +19,7 @@ import argparse
 import random
 from datetime import date, timedelta
 
-import mysql.connector
+import psycopg2
 from faker import Faker
 from tqdm import tqdm
 
@@ -380,7 +380,7 @@ def generate_fines(cursor) -> list[tuple]:
             -- returned late
             (return_date IS NOT NULL AND return_date > due_date)
             -- still out and past due date
-            OR (return_date IS NULL AND due_date < CURDATE())
+            OR (return_date IS NULL AND due_date < CURRENT_DATE)
     """)
     overdue = cursor.fetchall()
 
@@ -419,11 +419,11 @@ def main(host: str, user: str, password: str, database: str, port: int):
     print(f"\n  Public Library Seed Data Generator")
     print(f"    Target: {host}:{port} / {database}\n")
 
-    conn = mysql.connector.connect(
+    conn = psycopg2.connect(
         host=host, user=user, password=password,
-        database=database, port=port,
-        autocommit=False,
+        dbname=database, port=port
     )
+    conn.autocommit = False
     cur = conn.cursor()
 
     # ── branches ──────────────────────────────────────────────────────────────

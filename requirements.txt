@@ -4,7 +4,7 @@
 
 # Data generation
 Faker>=24.0.0
-mysql-connector-python>=8.4.0
+psycopg2-binary>=2.9.0
 tqdm>=4.66.0
 
 # Dashboard

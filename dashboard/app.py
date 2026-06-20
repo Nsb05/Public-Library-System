@@ -79,7 +79,7 @@ def get_engine(host, port, user, password, database):
     """Create a SQLAlchemy engine with connection-pool health checks."""
     try:
         url = (
-            f"mysql+mysqlconnector://{quote_plus(user)}:{quote_plus(password)}"
+            f"postgresql+psycopg2://{quote_plus(user)}:{quote_plus(password)}"
             f"@{host}:{port}/{database}"
         )
         engine = create_engine(url, pool_pre_ping=True)
@@ -88,7 +88,7 @@ def get_engine(host, port, user, password, database):
             conn.execute(text("SELECT 1"))
         return engine
     except Exception as e:
-        st.error(f"❌ Cannot connect to MySQL: {e}")
+        st.error(f"❌ Cannot connect to PostgreSQL: {e}")
         st.stop()
 
 
@@ -100,13 +100,13 @@ def run_query(_engine, sql: str) -> pd.DataFrame:
     except Exception:
         # Engine pool exhausted or DB went away — clear cache and prompt reconnect
         get_engine.clear()
-        st.warning("⚠️ Lost connection to MySQL. Please reconnect using the sidebar button.")
+        st.warning("⚠️ Lost connection to PostgreSQL. Please reconnect using the sidebar button.")
         st.stop()
 
 
 # ── sidebar — connection settings ────────────────────────────────────────────
-# Read defaults from .streamlit/secrets.toml [mysql] section if present
-_s = st.secrets.get("mysql", {}) if hasattr(st, "secrets") else {}
+# Read defaults from .streamlit/secrets.toml [postgres] section if present
+_s = st.secrets.get("postgres", {}) if hasattr(st, "secrets") else {}
 
 with st.sidebar:
     st.markdown("## ⚙️ Connection")
@@ -271,7 +271,7 @@ SELECT
 FROM books b
 JOIN copies c ON c.book_id = b.id
 JOIN loans  l ON l.copy_id = c.id
-WHERE l.checkout_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+WHERE l.checkout_date >= CURRENT_DATE - INTERVAL '12 months'
 {genre_clause}
 GROUP BY b.id, b.title, b.author, b.genre
 ORDER BY checkouts DESC
@@ -314,12 +314,12 @@ st.markdown('<p class="section-subtext">Stacked bars show what was issued; green
 
 fines_sql = """
 SELECT
-    YEAR(f.created_at)                                       AS fine_year,
+    EXTRACT(YEAR FROM f.created_at)                          AS fine_year,
     SUM(f.amount)                                            AS total_issued,
     SUM(CASE WHEN f.paid = TRUE  THEN f.amount ELSE 0 END)  AS collected,
     SUM(CASE WHEN f.paid = FALSE THEN f.amount ELSE 0 END)  AS outstanding
 FROM fines f
-GROUP BY YEAR(f.created_at)
+GROUP BY EXTRACT(YEAR FROM f.created_at)
 ORDER BY fine_year
 """
 fines_df = run_query(engine, fines_sql)
@@ -368,7 +368,7 @@ else:
 st.markdown("---")
 st.markdown(
     "<p style='text-align:center; color:#475569; font-size:0.8rem;'>"
-    "Public Library Management System · Built with Streamlit + Plotly · MySQL 8.0"
+    "Public Library Management System · Built with Streamlit + Plotly · PostgreSQL"
     "</p>",
     unsafe_allow_html=True,
 )
